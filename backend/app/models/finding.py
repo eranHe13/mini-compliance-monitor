@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, JSON
+from sqlalchemy import Column, Integer, String, DateTime, JSON , Text , Float
 from app.db.base import Base
 from datetime import datetime
 
@@ -11,4 +11,6 @@ class Finding(Base):
     description = Column(String , index =True)
     user = Column(String , index = True)
     timestamp = Column(DateTime , default= datetime.utcnow)
+    ai_explanation = Column(Text , nullable=True)
+    risk_score = Column(Float , nullable=True , index=True)
     

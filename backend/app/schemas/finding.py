@@ -8,6 +8,8 @@ class FindingBase(BaseModel):
     description:str
     user:str
 
+    ai_explanation: Optional[str] = None
+    risk_score: Optional[float] = None
 class FindingCreate(FindingBase):
     pass
 
