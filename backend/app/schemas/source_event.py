@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 class SourceEventBase(BaseModel):
     event_type: str
@@ -18,3 +18,11 @@ class SourceEvent(SourceEventBase):
 
     class Config:
         orm_mode = True
+
+class SourceEventFilter(BaseModel):
+    user: Optional[str] = None
+    event_type: Optional[str]= None
+    from_timestamp: Optional[datetime] = None
+    to_timestamp: Optional[datetime] = None
+    limit: int = 50
+    offset: int = 0

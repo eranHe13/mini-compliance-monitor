@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel 
 from datetime import datetime
-
+from typing import Optional
 
 class FindingBase(BaseModel):
     rule_name:str
@@ -17,3 +17,11 @@ class Finding(FindingBase):
 
     class Config: orm_mode = True
     
+class FindingFilter(BaseModel):
+    severity: Optional[str] = None
+    user: Optional[str] = None
+    from_timestamp: Optional[datetime] = None
+    to_timestamp: Optional[datetime] = None
+    limit: int = 50
+    offset: int = 0
+

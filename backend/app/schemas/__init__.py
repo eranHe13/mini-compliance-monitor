@@ -1,2 +1,2 @@
-from app.schemas.source_event import SourceEvent, SourceEventCreate
-from app.schemas.finding import Finding, FindingCreate
+from app.schemas.source_event import SourceEvent, SourceEventCreate , SourceEventFilter
+from app.schemas.finding import Finding, FindingCreate , FindingFilter
