@@ -1,306 +1,319 @@
-## 1. Project Name, Purpose, and Audience
+# Mini Compliance Monitor
 
-Project Name:
-Mini Compliance Monitor
+Mini Compliance Monitor is a fully functional, realistic mini GRC (Governance, Risk & Compliance) platform inspired by Anecdotes. The project demonstrates backend engineering, rule-based detection, AI-powered enrichment, log ingestion, analytics, and a full React dashboard.
 
-Primary Goal:
-Build a small but realistic GRC/Compliance-like system (inspired by Anecdotes) that demonstrates:
+---
 
-- 1.Backend development (FastAPI, SQL, API design)
-- Log ingestion & data normalization
-- Rules Engine + optional AI/ML
-- React dashboard with charts, filters, findings
-- Containerization + easy deployment (Docker + Render/Fly.io/Railway)
+## 1. Project Overview
 
-Who Is This For?
+### Purpose
 
-- Recruiters looking at your full-stack/backend skills
-- You, as a practical hands-on learning project for GRC systems
+To build a small but realistic compliance monitoring system that:
+
+- Ingests raw security/activity events
+- Normalizes and stores them
+- Processes them with a Rules Engine
+- Generates Findings (alerts)
+- Enriches Findings with AI (risk score + explanation)
+- Visualizes everything in a modern dashboard
+- Can be deployed easily (Docker, Render, Railway, Fly.io)
+
+### Audience
+
+- Recruiters evaluating backend/full-stack/AI skills
+- A hands-on learning platform for understanding real GRC systems
+
+---
 
 ## 2. Main Use Case
 
-“As a security/compliance engineer, I want to view suspicious or risky activity across my systems, based on ingested log data, so I can detect potential issues early.”
+> “As a security/compliance engineer, I want to monitor suspicious or risky activity across my systems, based on ingested logs, so I can detect potential issues early.”
 
-Flow:
+### Flow
 
-- System ingests raw events (fake logs or real GitHub API).
-- Events are normalized and stored in the DB.
-- Rules Engine analyzes events and generates Findings.
-- Dashboard displays counts, severity, activity trends, and a table of findings.
+1. Raw events are generated (fake logs) or ingested from external sources
+2. Normalized into `SourceEvent` records
+3. Rules Engine evaluates events and produces `Findings`
+4. AI Engine enriches Findings with `risk_score` + `ai_explanation`
+5. Dashboard displays statistics, charts, and detailed findings
+6. User can manually or batch-enrich findings with AI
 
-## 3. High-Level Architecture
+---
 
-Components
+## 3. System Architecture
 
-- Backend (Python + FastAPI)
-  - API layer
-  - DB models (SQLAlchemy)
-  - Ingestion services
-  - Rules Engine
-  - Stats module
-- Database
-  - SQLite (development)
-  - PostgreSQL (optional later)
-- Log Sources
-  - Phase 1: Fake Log Generator
-  - Phase 2: Real integration (GitHub events / audit logs)
-- Frontend (React + TypeScript)
-  - Dashboard
-  - Charts
-  - Filters
-  - Findings table
-- DevOps
-  - Docker
-  - docker-compose
-  - Deployment to Render / Railway / Fly.io
+**Backend (FastAPI)**
+
+- API routes (`health`, `events`, `findings`, `stats`)
+- SQLAlchemy models + schemas
+- Ingestion & log generation services
+- Rules engine that emits findings
+- Stats + AI enrichment services
+
+**Database**
+
+- SQLite (development)
+- PostgreSQL planned in the future
+
+**Frontend (React + TypeScript + Tailwind + shadcn/ui)**
+
+- Dashboard aggregating metrics, charts, filters, and tables
+- Summary cards, findings table, and AI enrichment tools
+- Vite dev server with TanStack Query + React Router
+
+**DevOps**
+
+- Docker & docker-compose (placeholder)
+- Deployable to Render, Railway, Fly.io
+
+---
 
 ## 4. Data Model
 
-### 4.1 Table: source_events
+### 4.1 `source_events`
 
-Represents raw ingested events.
+| Field           | Type       | Description                                    |
+|-----------------|------------|------------------------------------------------|
+| `id`            | int (PK)   | Unique event ID                                |
+| `timestamp`     | datetime   | When the event occurred                         |
+| `user`          | string     | Actor/user                                      |
+| `event_type`    | string     | e.g., `login_failed`, `api_token_created`      |
+| `raw_data`      | JSON       | Original payload (IPs, change counts, scopes)  |
+| `processed`     | boolean   | Whether the Rules Engine has processed it       |
 
-Fields:
+#### Supported Event Types
 
-- id – primary key
-- external_id – ID from external source (nullable for fake logs)
-- source – "fake" or "github"
-- timestamp – event timestamp
-- user – actor/username
-- event_type – e.g., "login_failed", "pull_request_opened"
-- severity_hint – optional (initial categorization)
-- raw_data – full JSON payload
-- processed – boolean, whether event has been analyzed
+- **Auth**: `login_success`, `login_failed`
+- **MFA**: `mfa_challenge`, `mfa_failed`, `mfa_success`
+- **Git**: `pull_request_opened`, `pull_request_merged`
+- **Permissions**: `permission_changed`
+- **API Tokens**: `api_token_created`, `api_token_revoked`
+- **Deployments**: `deployment_started`, `deployment_succeeded`, `deployment_failed`
+- **Storage**: `storage_bucket_created`, `storage_bucket_permission_changed`
 
-### 4.2 Table: findings
+Each event includes rich `raw_data` such as repository metadata, location, change counts, scopes, and visibility flags.
 
-Represents alerts/anomalies created by the rules engine.
+### 4.2 `findings`
 
-Fields:
+| Field           | Type     | Description                            |
+|-----------------|----------|----------------------------------------|
+| `id`            | int (PK) | Finding ID                               |
+| `rule_name`     | string   | Rule that triggered                      |
+| `description`   | string   | Human-readable explanation               |
+| `severity`      | enum     | `low`, `medium`, `high`, `critical`     |
+| `user`          | string   | Associated user                          |
+| `created_at`    | datetime | Auto timestamp                            |
+| `event_id`      | FK       | Related `source_event` (optional)      |
+| `risk_score`    | float    | 0–100 AI risk assessment                 |
+| `ai_explanation` | string   | AI-generated explanation                 |
+| `extra_data`    | JSON     | Optional metadata                        |
 
-- id – primary key
-- rule_name – name of the rule that triggered
-- severity – "low" | "medium" | "high" | "critical"
-- description – human-readable explanation
-- timestamp – creation time
-- user – associated user (if relevant)
-- event_id – FK → source_events.id (optional)
-- risk_score – 0–100 numeric risk (future AI)
-- extra_data – JSON metadata related to the detection
+---
 
 ## 5. API Specification
 
-All routes under /api.
+### Base path: `/`
 
-### 5.1 Health
+### 5.1 Health Check
 
-GET /api/health
+`GET /health`
 
-Returns:
+**Response**
 
+```json
 { "status": "ok" }
+```
 
 ### 5.2 Events
 
-GET /api/events
+`GET /events`
 
-Query params (all optional):
+**Query parameters**
 
-- user
-- event_type
-- from, to
-- limit, offset
+- `user` – filter by user
+- `event_type` – filter by event type
+- `from_timestamp` / `to_timestamp` – ISO 8601 datetimes
+- `limit` (default `50`) / `offset` (default `0`)
 
-Response: list of SourceEvent.
+**Response**
 
-(Optional) POST /api/events
-
-Allows manual creation (useful for demo).
+`List[SourceEvent]` objects with `id`, `event_type`, `user`, `timestamp`, and `raw_data`.
 
 ### 5.3 Findings
 
-GET /api/findings
+`GET /findings`
 
-Query params:
+**Query parameters**
 
-- severity
-- user
-- rule_name
-- from, to
-- limit, offset
+- `page` (default `1`, min `1`)
+- `page_size` (default `20`, max `100`)
+- `severity`, `user` – equality filters
+- `from_date`, `to_date` – ISO dates converted to day boundaries
 
-Response: list of Finding.
+**Response**
 
-### 5.4 Stats / Dashboard Data
+`PaginatedFindings`:
 
-GET /api/stats/summary
+- `items` – each `Finding` (includes `rule_name`, `description`, `severity`, `user`, `created_at`, `risk_score`, and `ai_explanation`)
+- `total`, `page`, `page_size`
 
-Returns:
+### 5.4 AI Enrichment
 
-```
+#### Enrich a single finding
+
+`POST /findings/{finding_id}/enrich_with_ai`
+
+- Path: `finding_id`
+- Returns the updated `Finding`
+- Uses OpenAI if `OPENAI_API_KEY` is configured, otherwise fallback heuristics
+
+#### Batch enrichment
+
+`POST /findings/enrich_all_missing`
+
+- Query: `limit` (default `50`, max `500`)
+- Enriches findings missing `risk_score` or `ai_explanation`
+- Returns the list of updated findings
+
+### 5.5 Stats Summary
+
+`GET /stats/summary`
+
+**Response**
+
+```json
 {
   "total_events": 1234,
   "total_findings": 45,
   "findings_by_severity": {
     "low": 10,
     "medium": 20,
-    "high": 15
+    "high": 15,
+    "critical": 12
   },
   "events_over_time": [
     { "date": "2025-01-20", "count": 100 },
     { "date": "2025-01-21", "count": 150 }
-  ],
-  "findings_over_time": [
-    { "date": "2025-01-20", "count": 5 },
-    { "date": "2025-01-21", "count": 8 }
   ]
 }
 ```
 
+Drives the dashboard cards, bar chart, and event timeline.
+
+---
+
 ## 6. Ingestion Layer
 
-### 6.1 Phase 1 — Fake Logs
+### 6.1 Fake Log Generator
 
-Module: app/services/fake_ingestion.py
+- Generates hundreds of realistic events with randomized users and rich `raw_data`
+- Distributes events across ~30 days with varied timestamps
+- Exposes helpers:
+  - `generate_fake_event()`
+  - `generate_fake_events_batch(n)`
+  - `save_events_to_db(events)`
 
-Functions:
+### 6.2 GitHub Integration (Future)
 
-- generate_fake_event()
-- generate_fake_events_batch(n)
-- save_events_to_db(events)
+- `fetch_github_events(since)`
+- `normalize_github_event(event)`
+- Potential sources: GitHub Events API, GitHub Audit Log API
 
-Event types:
-
-- login_success
-- login_failed
-- pull_request_opened
-- pull_request_merged
-- role_changed
-
-Users generated randomly from a small predefined pool.
-Timestamps randomized across a defined range.
-
-### 6.2 Phase 2 — GitHub Integration
-
-Module: app/services/github_client.py
-
-Functions:
-
-- fetch_github_events(since)
-- normalize_github_event(event)
-
-Log sources:
-
-- GitHub events API
-- GitHub audit-log API (if needed)
-
-Normalized into the SourceEvent structure.
+---
 
 ## 7. Rules Engine
 
-Module: app/services/rules_engine.py
+**Core function**
 
-### 7.1 Rule Structure
+- `apply_rules_to_event(event, db) -> list[Finding]`
 
-Simple functional approach:
+**Rule categories**
 
-```
-def rule_login_failed(events) -> list[Finding]:
-    ...
+- **Authentication**
+  - Too many login failures → medium/high/critical
+  - Suspicious login after failures → critical
+- **MFA**
+  - Repeated failures → medium/high
+  - Success following failures → low
+- **Permissions**
+  - Role escalation to admin → high/critical
+  - Viewer → developer escalation → medium
+- **API Tokens**
+  - `admin:*` → critical
+  - Missing expiry → high
+- **Git / PR**
+  - Large merge (>400 lines) → high
+  - Medium-sized changes → medium
+- **Deployments**
+  - Failure in prod → high
+  - Failure in staging → medium
+- **Storage**
+  - Public bucket detected → critical
+- **Global activity**
+  - Too many events in the last hour → high
 
-def rule_high_activity(events) -> list[Finding]:
-    ...
-```
+**Execution script**
 
-Or a class-based interface.
+- `python -m app.scripts.run_rules`
+- Fetches unprocessed events, applies rules, inserts findings, marks events as processed
 
-### 7.2 MVP Rules
+---
 
-Rule 1 — Login Failed → High Severity
+## 8. Frontend (React + TypeScript + Tailwind + shadcn/ui)
 
-If event_type = "login_failed" → generate high-severity finding.
+**Features**
 
-Rule 2 — High Activity
+- Modern dashboard UI (Lovable-generated + manual polish)
+- Summary cards for top-level counts
+- Severity bar chart + events-over-time line chart (Recharts)
+- Rich findings table with:
+  - Severity badges
+  - Risk score column
+  - AI column (Enrich with AI / Enriched)
+  - Responsive, scrollable layout (`min-w-[1100px]`)
+- Batch enrichment button: “Enrich All with AI”
 
-If user has >N events within a short time window → generate medium severity finding.
+**API client**
 
-Rule 3 — Rare Event Type (optional)
+- `getSummary()`
+- `getFindings()`
+- `enrichFinding()`
+- `enrichAllMissing()`
 
-Event type occurs rarely → lower severity finding.
-
-### 7.3 Rule Execution
-
-Function:
-run_rules_on_new_events()
-
-Steps:
-
-1. Fetch unprocessed events
-2. Run all rules
-3. Insert generated findings
-4. Mark events as processed
-
-Execution mode:
-
-- Script (python -m app.scripts.run_rules)
-- Or scheduled job
-
-## 8. Frontend Specification (React + TypeScript)
-
-Tech stack:
-
-- React
-- TypeScript
-- TailwindCSS
-- Recharts / Chart.js
-
-### 8.1 Main Pages
-
-Dashboard
-
-Sections:
-
-- Summary cards (events, findings, breakdown by severity)
-- Activity charts
-- Findings table with filters
-
-### 8.2 Components
-
-- DashboardPage
-- StatsCards
-- EventsChart
-- FindingsChart
-- FindingsTable (sortable + filterable)
-
-### 8.3 API Client
-
-Module src/api/client.ts:
-
-- getSummary()
-- getFindings(params)
-- getEvents(params)
+---
 
 ## 9. Non-Functional Requirements
 
-- Code clarity: readable, simple, maintainable
-- No authentication in MVP
-- Small to moderate dataset
+- Clean, readable, maintainable code
+- No authentication in the MVP
+- Easy to extend rules, log sources, integrations
+- SQLite for fast local development
+- Container-ready architecture
 
-Documentation:
-
-- README with instructions
-- Screenshots
-
-Extensibility:
-
-- Add more log sources
-- Add more rules
-- Enhance AI/ML
+---
 
 ## 10. Future Enhancements
 
-- Switch to PostgreSQL + Alembic
-- Add more integrations (AWS CloudTrail, Azure, etc.)
-- Add advanced AI (LLM scoring, anomaly models)
-- Drill-down screens (per user, per event)
-- Plugins-based architecture for rules
+- Migrate to PostgreSQL + Alembic migrations
+- Add log sources: AWS CloudTrail, Okta, Azure AD
+- Explore AI anomaly detection models
+- Expand dashboards: user-, event-, rule-level views
+- Plugin system for custom rules
+- RBAC (roles & authentication)
+- CI/CD pipeline
+
+---
+
+## Summary
+
+The Mini Compliance Monitor is now a fully working, end-to-end compliance monitoring system with:
+
+- Log ingestion
+- Normalized storage
+- A rich Rules Engine
+- AI-powered enrichment
+- Full dashboard UI
+- Batch processing
+- Extendable architecture
+
+Perfect for portfolios, interviews, and practical GRC learning.
