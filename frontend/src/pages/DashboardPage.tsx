@@ -10,6 +10,8 @@ import { FindingsTable } from '@/components/dashboard/FindingsTable';
 import { FindingDetailsModal } from '@/components/dashboard/FindingDetailsModal';
 import { useToast } from '@/hooks/use-toast';
 import { MOCK_STATS_SUMMARY, MOCK_FINDINGS_RESPONSE } from '@/mocks/demoData';
+import { enrichAllMissing, enrichFinding } from '@/api/findings';
+import { Button } from '@/components/ui/button';
 
 // Toggle to use mock data instead of real API calls
 const USE_MOCK_DATA = false;
@@ -102,6 +104,73 @@ export default function DashboardPage() {
     setPage(newPage);
   };
 
+  const handleEnrichFinding = async (id: number) => {
+    try {
+      const updated = await enrichFinding(id);
+      setFindingsResponse((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.map((f) =>
+                f.id === updated.id ? updated : f
+              ),
+            }
+          : prev
+      );
+      toast({
+        title: 'Finding updated',
+        description: `AI enrichment completed.`,
+      });
+    } catch (e) {
+      toast({
+        title: 'Error',
+        description: 'Failed to enrich finding with AI.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleEnrichAllMissing = async () => {
+  try {
+    toast({
+      title: 'Processing',
+      description: 'Enriching all findings with AI...',
+    });
+
+    const updatedList = await enrichAllMissing(100); // limit=100
+
+    if (!updatedList.length) {
+      toast({
+        title: 'No findings need enrichment',
+        description: 'All findings already enriched.',
+      });
+      return;
+    }
+
+    setFindingsResponse((prev) =>
+      prev
+        ? {
+            ...prev,
+            items: prev.items.map((f) =>
+              updatedList.find((u) => u.id === f.id) || f
+            ),
+          }
+        : prev
+    );
+
+    toast({
+      title: 'Completed',
+      description: `Updated ${updatedList.length} findings with AI`,
+    });
+  } catch (e) {
+    toast({
+      title: 'Error',
+      description: 'Failed to enrich findings with AI.',
+      variant: 'destructive',
+    });
+  }
+};
+
   const handleViewDetails = (finding: Finding) => {
     setSelectedFinding(finding);
   };
@@ -144,17 +213,21 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-semibold text-foreground">Findings</h3>
+          <Button variant="default" onClick={handleEnrichAllMissing}>
+            Enrich All with AI
+          </Button>
         </div>
 
         <FindingsFiltersComponent filters={filters} onChange={handleFiltersChange} />
 
         <FindingsTable
-          response={findingsResponse}
-          loading={loadingFindings}
-          error={errorFindings}
-          onPageChange={handlePageChange}
-          onViewDetails={handleViewDetails}
-        />
+  response={findingsResponse}
+  loading={loadingFindings}
+  error={errorFindings}
+  onPageChange={handlePageChange}
+  onViewDetails={handleViewDetails}
+  onEnrichFinding={handleEnrichFinding}
+/>
       </div>
 
       <FindingDetailsModal finding={selectedFinding} onClose={handleCloseModal} />

@@ -6,7 +6,8 @@ from app.db.session import engine
 
 from fastapi.middleware.cors import CORSMiddleware
 
-
+from dotenv import load_dotenv
+load_dotenv()
 def create_app() -> FastAPI:
     app = FastAPI(title="Mini Compliance Monitor")
     

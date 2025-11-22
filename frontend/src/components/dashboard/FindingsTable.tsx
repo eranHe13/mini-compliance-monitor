@@ -9,6 +9,8 @@ interface FindingsTableProps {
   error?: string | null;
   onPageChange: (page: number) => void;
   onViewDetails: (finding: Finding) => void;
+  onEnrichFinding?: (id: number) => void;
+
 }
 
 const severityConfig: Record<Severity, { bg: string; text: string; label: string }> = {
@@ -24,6 +26,7 @@ export function FindingsTable({
   error,
   onPageChange,
   onViewDetails,
+  onEnrichFinding,
 }: FindingsTableProps) {
   if (loading) {
     return (
@@ -123,8 +126,31 @@ export function FindingsTable({
                     <td className="px-4 py-3 text-sm text-muted-foreground">
                       {finding.risk_score ?? '—'}
                     </td>
-                    
                     <td className="px-4 py-3">
+                      {/* View button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onViewDetails(finding)}
+                        className="h-8 mr-2"
+                      >
+                        <Eye className="mr-1 h-3.5 w-3.5" />
+                        View
+                      </Button>
+
+                      {/* AI button */}
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled={finding.risk_score !== null && finding.risk_score !== undefined}
+                        onClick={() => onEnrichFinding?.(finding.id)}
+                        className="h-8"
+                      >
+                        {finding.risk_score != null ? "Enriched" : "Enrich with AI"}
+                      </Button>
+                    </td>
+
+                    {/* <td className="px-4 py-3">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -134,7 +160,7 @@ export function FindingsTable({
                         <Eye className="mr-1 h-3.5 w-3.5" />
                         View
                       </Button>
-                    </td>
+                    </td> */}
                   </tr>
                 );
               })}

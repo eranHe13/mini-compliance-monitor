@@ -125,7 +125,8 @@ def enrich_finding_with_ai(db: Session, finding_id: int) -> FindingSchema:
     # First try with OpenAI, if it fails, fall back
     try:
         risk_score, explanation = _call_openai_for_finding(finding)
-    except Exception:
+    except Exception as e:
+        print(f"----------------------------------------------------------\nError calling OpenAI for finding {finding_id}: {e}")
         risk_score, explanation = _fallback_risk_and_explanation(finding)
 
     finding.risk_score = risk_score
