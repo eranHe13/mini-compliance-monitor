@@ -4,11 +4,12 @@ from sqlalchemy import func
 
 from app.db.deps import get_db
 from app import  models
+from app.schemas import StatsSummary
 from app.services.stats_service import get_summary_stats
 
 stats_router = APIRouter()
 
-@stats_router.get("/summary")
+@stats_router.get("/summary"  , response_model = StatsSummary)
 def get_summary(db: Session = Depends(get_db)):
     '''
     Return basic stats summary :

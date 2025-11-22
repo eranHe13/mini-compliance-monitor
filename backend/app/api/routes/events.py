@@ -7,7 +7,7 @@ from app.db.deps import get_db
 from app.services.events_service import query_events
 events_router = APIRouter()
 
-@events_router.get("/" , response_model=List[schemas.SourceEvent])
+@events_router.get("" , response_model=List[schemas.SourceEvent])
 def list_events(
     filters: schemas.SourceEventFilter = Depends(),
     db: Session = Depends(get_db)):

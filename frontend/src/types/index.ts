@@ -1,3 +1,5 @@
+// frontend/src/types/index.ts
+
 export type Severity = 'low' | 'medium' | 'high' | 'critical';
 
 export interface Event {

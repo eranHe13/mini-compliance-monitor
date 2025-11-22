@@ -18,7 +18,8 @@ EVENT_TYPES = [
     ]
 
 def _random_ip() -> str:
-    return "".join(str(random.randint(1,254)) for _ in range (4))
+    return ".".join(str(random.randint(1, 254)) for _ in range(4))
+
 
 
 def generate_fake_events() -> Dict[str, Any]:
@@ -39,7 +40,7 @@ def generate_fake_events() -> Dict[str, Any]:
     
     elif event_type in("pull_request_opened" , "pull_request_merged"):
         raw_data = {
-            "repo" : random.choice(["mini-monitor" , "backend-service" , "fronted-service"]) , 
+            "repo" : random.choice(["mini-monitor" , "backend-service" , "frontend-service"]) , 
             "branch" : random.choice(["main" , "develop" , "feature/rule-engine"]) , 
             "line_changed" : random.randint(5, 500)
         }
