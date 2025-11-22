@@ -19,7 +19,9 @@ class Finding(FindingBase):
     id:int
     created_at:datetime
 
-    class Config: orm_mode = True
+    
+    class Config:
+        from_attributes = True
     
 class FindingFilter(BaseModel):
     severity: Optional[str] = None

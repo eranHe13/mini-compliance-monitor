@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { MOCK_STATS_SUMMARY, MOCK_FINDINGS_RESPONSE } from '@/mocks/demoData';
 
 // Toggle to use mock data instead of real API calls
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -117,7 +117,7 @@ export default function DashboardPage() {
           Compliance Dashboard
         </h2>
         <p className="text-muted-foreground">
-          Monitor and analyze compliance findings in real-time
+          Monitor and analyze compliance findings 
         </p>
       </div>
 

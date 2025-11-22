@@ -6,7 +6,7 @@ from app.schemas.finding import FindingFilter
 from app import schemas
 from datetime import datetime , time , date
 
-def get_findings_paginated(
+def query_findings(
     db: Session,
     page: int,
     page_size: int,
